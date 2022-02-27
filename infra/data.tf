@@ -1,3 +1,5 @@
+data "aws_caller_identity" "current" {}
+
 data "template_file" "task_def_generated" {
   template = file("./task-definitions/service.json.tpl")
   vars = {
