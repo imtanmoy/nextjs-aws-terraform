@@ -117,7 +117,7 @@ module "ecs_roles" {
   create_ecs_task_role      = true
 
   # Extend baseline policy statements (ignore for now)
-  ecs_execution_policies_extension = {}
+#  ecs_execution_policies_extension = {}
 }
 
 resource "aws_cloudwatch_log_group" "ecs" {

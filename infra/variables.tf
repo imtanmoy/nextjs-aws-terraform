@@ -5,7 +5,7 @@ variable "name" {
 
 variable "env" {
   description = "the name of your environment, e.g. \"prod\""
-  default     = "dev"
+  default     = "stage"
 }
 
 variable "region" {
