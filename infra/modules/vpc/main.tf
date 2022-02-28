@@ -17,19 +17,19 @@ resource "aws_vpc" "main" {
 
 #### Public subnets - internet facing  (lb, gateways)
 resource "aws_subnet" "public_subnets" {
-  count             = min(length(data.aws_availability_zones.azs), length(var.subnet_public_cidrblock))
+  count             = min(data.aws_availability_zones.azs.count, length(var.subnet_public_cidrblock))
   vpc_id            = aws_vpc.main.id
   cidr_block        = var.subnet_public_cidrblock[count.index]
-  availability_zone = data.aws_availability_zones.azs[count.index]
+  availability_zone = data.aws_availability_zones.azs.names[count.index]
   tags              = {
-    Name        = "${var.name}-public-subnet-${var.env}-${data.aws_availability_zones.azs[count.index]}"
+    Name        = "${var.name}-public-subnet-${var.env}-${data.aws_availability_zones.azs.names[count.index]}"
     Environment = var.env
   }
 }
 
 #### Private subnets - Internal facing (apps, db etc)
 resource "aws_subnet" "private_subnets" {
-  count             = min(length(data.aws_availability_zones.azs), length(var.subnet_private_cidrblock))
+  count             = min(data.aws_availability_zones.azs.count, length(var.subnet_private_cidrblock))
   vpc_id            = aws_vpc.main.id
   cidr_block        = var.subnet_private_cidrblock[count.index]
   availability_zone = data.aws_availability_zones.azs.names[count.index]
