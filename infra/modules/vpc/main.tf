@@ -35,7 +35,7 @@ resource "aws_subnet" "private_subnets" {
   availability_zone = data.aws_availability_zones.azs.names[count.index]
 
   tags = {
-    Name        = "${var.name}-private-subnet-${var.env}-${data.aws_availability_zones.azs[count.index]}"
+    Name        = "${var.name}-private-subnet-${var.env}-${data.aws_availability_zones.azs.names[count.index]}"
     Environment = var.env
   }
 }
