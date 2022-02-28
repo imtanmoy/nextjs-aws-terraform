@@ -14,18 +14,7 @@ resource "aws_vpc" "main" {
   }
 }
 
-#### Private subnets - Internal facing (apps, db etc)
-resource "aws_subnet" "private_subnets" {
-  count             = min(length(data.aws_availability_zones.azs), length(var.subnet_private_cidrblock))
-  vpc_id            = aws_vpc.main.id
-  cidr_block        = var.subnet_private_cidrblock[count.index]
-  availability_zone = data.aws_availability_zones.azs.names[count.index]
 
-  tags = {
-    Name        = "${var.name}-private-subnet-${var.env}-${data.aws_availability_zones.azs[count.index]}"
-    Environment = var.env
-  }
-}
 
 #### Public subnets - internet facing  (lb, gateways)
 resource "aws_subnet" "public_subnets" {
@@ -39,17 +28,20 @@ resource "aws_subnet" "public_subnets" {
   }
 }
 
-resource "aws_eip" "nat_eip" {
-  count = length(var.subnet_private_cidrblock)
-  vpc   = true
+#### Private subnets - Internal facing (apps, db etc)
+resource "aws_subnet" "private_subnets" {
+  count             = min(length(data.aws_availability_zones.azs), length(var.subnet_private_cidrblock))
+  vpc_id            = aws_vpc.main.id
+  cidr_block        = var.subnet_private_cidrblock[count.index]
+  availability_zone = data.aws_availability_zones.azs.names[count.index]
 
   tags = {
-    Name        = "${var.name}-eip-${var.env}-${format("%03d", count.index+1)}"
+    Name        = "${var.name}-private-subnet-${var.env}-${data.aws_availability_zones.azs[count.index]}"
     Environment = var.env
   }
 }
 
-resource "aws_internet_gateway" "main" {
+resource "aws_internet_gateway" "igw" {
   vpc_id = aws_vpc.main.id
 
   tags = {
@@ -58,14 +50,24 @@ resource "aws_internet_gateway" "main" {
   }
 }
 
-resource "aws_nat_gateway" "main" {
+resource "aws_nat_gateway" "ngw" {
   count         = length(var.subnet_private_cidrblock)
   allocation_id = element(aws_eip.nat_eip.*.id, count.index)
   subnet_id     = element(aws_subnet.public_subnets.*.id, count.index)
-  depends_on    = [aws_internet_gateway.main]
+  depends_on    = [aws_internet_gateway.igw]
 
   tags = {
     Name        = "${var.name}-nat-${var.env}-${format("%03d", count.index+1)}"
+    Environment = var.env
+  }
+}
+
+resource "aws_eip" "nat_eip" {
+  count = length(var.subnet_private_cidrblock)
+  vpc   = true
+
+  tags = {
+    Name        = "${var.name}-eip-${var.env}-${format("%03d", count.index+1)}"
     Environment = var.env
   }
 }
@@ -82,7 +84,7 @@ resource "aws_route_table" "public" {
 resource "aws_route" "public" {
   route_table_id         = aws_route_table.public.id
   destination_cidr_block = "0.0.0.0/0"
-  gateway_id             = aws_internet_gateway.main.id
+  gateway_id             = aws_internet_gateway.igw.id
 }
 
 resource "aws_route_table" "private" {
@@ -99,7 +101,7 @@ resource "aws_route" "private" {
   count                  = length(compact(var.subnet_private_cidrblock))
   route_table_id         = element(aws_route_table.private.*.id, count.index)
   destination_cidr_block = "0.0.0.0/0"
-  nat_gateway_id         = element(aws_nat_gateway.main.*.id, count.index)
+  nat_gateway_id         = element(aws_nat_gateway.ngw.*.id, count.index)
 }
 
 resource "aws_route_table_association" "private" {
