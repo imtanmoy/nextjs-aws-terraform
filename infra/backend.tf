@@ -1,6 +1,6 @@
 terraform {
   backend "s3" {
-    bucket  = "terraform-backend-store"
+    bucket  = "nextjs-terraform-backend-store"
     encrypt = true
     key     = "terraform.tfstate"
     region  = "ap-southeast-1"
